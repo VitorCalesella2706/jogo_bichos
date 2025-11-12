@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="UTF-8">
+<title>Quiz de Encaixe</title>
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    background-color: #f0f3f7;
+    text-align: center;
+    padding: 20px;
+  }
+
+  h1 {
+    color: #2c3e50;
+  }
+
+  .config {
+    margin-bottom: 20px;
+  }
+
+  #game-area {
+    display: none;
+  }
+
+  #shadow-board, #pieces {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 10px;
+    margin: 20px 0;
+  }
+
+  /* Largura do Slot de Pergunta (Descrição) mantida em 250px */
+  .shadow-slot {
+    width: 250px; 
+    height: 60px;
+    border: 2px dashed #ccc;
+    background-color: #ecf0f1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    position: relative; 
+    padding-right: 25px; 
+    padding-left: 5px; 
+    text-align: left; 
+    font-size: 0.85em; 
+  }
+
+  /* NOVO CSS: Estilo para o ícone de remover 'X' */
+  .remove-icon {
+    position: absolute;
+    right: 5px;
+    top: 50%;
+    transform: translateY(-50%);
+    cursor: pointer;
+    font-weight: bold;
+    color: #e74c3c; 
+    font-size: 1.2em;
+    padding: 0 5px;
+    border-radius: 50%;
+    transition: background-color 0.2s;
+  }
+  
+  /* NOVO CSS: Garante que os spans dentro do slot se ajustem */
+  .shadow-slot span {
+      display: inline-block;
+      max-width: 100%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: normal;
+      line-height: 1.2;
+  }
+
+  .remove-icon:hover {
+    background-color: rgba(231, 76, 60, 0.2); 
+  }
+
+  .shadow-slot.correct { background-color: #a8e6a3; }
+  .shadow-slot.wrong { background-color: #f5a3a3; }
+
+  /* Largura da peça de resposta (Peça Azul) */
+  .piece {
+    width: 150px; 
+    height: 50px;
+    background-color: #3498db;
+    color: white;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: grab;
+    font-size: 0.9em; 
+  }
+
+  .piece.used {
+    background-color: #7f8c8d;
+    cursor: not-allowed;
+  }
+
+  #timer {
+    font-size: 20px;
+    color: #e74c3c;
+    margin: 10px;
+  }
+
+  #result {
+    font-weight: bold;
+    margin-top: 20px;
+    font-size: 18px;
+  }
+
+  #ranking {
+    margin-top: 20px;
+    display: none;
+  }
+  
+  /* ⭐️ NOVO: Classe para forçar o negrito no ranking */
+  .rank-highlight {
+    font-weight: bold;
+  }
+
+  .back-button {
+    position: fixed;
+    top: 15px;
+    left: 15px;
+    background-color: #95a5a6;
+    color: white;
+    padding: 8px 12px;
+    border-radius: 6px;
+    text-decoration: none;
+  }
+  
+  /* -------------------------------------- */
+  /* ESTILOS DOS MODAIS CUSTOMIZADOS */
+  /* -------------------------------------- */
+  /* NOVO: Apenas o modal de nomes é escondido, o de regras deve aparecer */
+  #player-name-modal { 
+    display: none;
+  }
+  #rules-modal {
+    display: flex; /* Garante que o modal de regras apareça por padrão */
+  }
+
+  #player-name-modal, #rules-modal { 
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.7); 
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+  }
+
+  .modal-content {
+    background-color: #ecf0f1;
+    padding: 30px;
+    border-radius: 10px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    width: 80%;
+    max-width: 400px;
+    text-align: left;
+  }
+
+  .modal-content h2 {
+    color: #2c3e50;
+    margin-top: 0;
+    border-bottom: 2px solid #bdc3c7;
+    padding-bottom: 10px;
+    text-align: center;
+  }
+  
+  #rules-text h3 {
+      color: #3498db;
+      margin-top: 20px;
+  }
+  #rules-text ul {
+      padding-left: 20px;
+  }
+
+
+  .player-input-group {
+    margin-bottom: 15px;
+  }
+
+  .player-input-group label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: bold;
+    color: #34495e;
+  }
+
+  .player-input-group input {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    box-sizing: border-box; 
+  }
+
+  #submitNames, #closeRules {
+    width: 100%;
+    padding: 10px;
+    background-color: #2ecc71; 
+    color: white;
+    border: none;
+    border-radius: 5px;
+    font-size: 1.1em;
+    cursor: pointer;
+    transition: background-color 0.2s;
+  }
+
+  #submitNames:hover, #closeRules:hover {
+    background-color: #27ae60;
+  }
+</style>
+</head>
+<body>
+
+<a href="#" class="back-button" onclick="location.reload()">← Reiniciar</a>
+
+<h1 id="game-title">Quiz de Encaixe - Modo Single Player</h1>
+
+<div class="config">
+  <label>Modo de jogo:</label>
+  <select id="numPlayers" onchange="updateTitle()">
+    <option value="1">Single Player</option>
+    <option value="2">2 Jogadores</option>
+    <option value="3">3 Jogadores</option>
+    <option value="4">4 Jogadores</option>
+  </select>
+  <div id="names"></div>
+  <button onclick="startGame()">Iniciar Jogo</button>
+</div>
+
+<div id="game-area">
+  <h2 id="currentPlayer"></h2>
+  <div id="timer">Tempo: 5:00</div>
+  <div id="shadow-board"></div>
+  <div id="pieces"></div>
+  <button id="verify" onclick="verificar()">Finalizar Tentativa</button>
+  <div id="result"></div>
+</div>
+
+<div id="ranking"></div>
+
+<div id="rules-modal">
+  <div class="modal-content">
+    <h2>🏆 Regras do Quiz de Encaixe 🧩</h2>
+    <div id="rules-text">
+      <p>Este é um jogo de encaixe de conceitos. Seu objetivo é arrastar e soltar as peças de <strong>Respostas (Azuis)</strong> nos slots correspondentes às <strong>Perguntas (Descrições)</strong>.</p>
+      
+      <h3>Como Funciona a Pontuação?</h3>
+      <ul>
+        <li>✅ Você ganha <strong>1 ponto</strong> para cada resposta correta.</li>
+        <li>❌ Respostas erradas não geram pontos, mas podem ser corrigidas antes de finalizar a tentativa.</li>
+      </ul>
+      
+      <h3>Modo Multiplayer (Hotseat)</h3>
+      <ul>
+        <li>O jogo funciona com todos os participantes no mesmo dispositivo.</li>
+        <li>Cada jogador tem <strong>5 minutos</strong> para preencher a tabela.</li>
+        <li>O Ranking Final é definido pela <strong>maior pontuação</strong>. Em caso de empate, o jogador com a mesma pontuação, mas que usou <strong>menos tempo</strong> para completar o turno, fica em posição superior.</li>
+      </ul>
+      
+    </div>
+    <button id="closeRules" onclick="closeRulesAndShowConfig()">Entendi! Começar Jogo</button>
+  </div>
+</div>
+
+<div id="player-name-modal">
+  <div class="modal-content">
+    <h2>Insira os Nomes dos Jogadores</h2>
+    <div id="names-form">
+      </div>
+    <button id="submitNames" onclick="submitNames()">Começar o Quiz</button>
+  </div>
+</div>
+<script>
+  const perguntas = [
+    { pergunta: "Peça mergulhada em metal fundido para evitar corrosão.", resposta: "Imersão a quente" },
+    { pergunta: "Corrente elétrica deposita camada metálica sobre a superfície.", resposta: "Eletrodeposição" },
+    { pergunta: "Revestimento físico, sem reação química.", resposta: "PVD (Deposição Física no Vapor)" },
+    { pergunta: "Revestimento obtido por reação química em fase gasosa.", resposta: "CVD (Deposição Química no Vapor)" },
+    { pergunta: "Material fundido é pulverizado sobre a peça.", resposta: "Aspersão térmica" },
+    { pergunta: "União de metal nobre sobre outro para proteger.", resposta: "Cladeamento (Cladding)" },
+    { pergunta: "Íons são inseridos na superfície para aumentar dureza.", resposta: "Implantação iônica" },
+    { pergunta: "Endurece e melhora a superfície sem alterar o interior.", resposta: "Tratamento a laser" },
+    { pergunta: "Cria camada protetora e melhora aderência de tintas.", resposta: "Fosfatização" },
+    { pergunta: "Aumenta resistência e permite coloração do alumínio.", resposta: "Anodização" },
+    { pergunta: "Revestimento químico que evita corrosão.", resposta: "Cromatização" },
+    { pergunta: "Revestimento de zinco para proteger o aço contra ferrugem.", resposta: "Galvanização" },
+    { pergunta: "Suaviza a superfície por ação elétrica e química.", resposta: "Polimento eletrolítico" },
+    { pergunta: "Introduz nitrogênio na superfície para endurecer o aço.", resposta: "Nitretação" },
+    { pergunta: "Forma óxidos protetores na superfície metálica.", resposta: "Oxidação térmica" }
+  ];
+
+  let currentPlayerIndex = 0;
+  let players = [];
+  let scores = [];
+  let times = []; 
+  let timerInterval;
+  let totalTime = 300; 
+  let timeLeft = totalTime; 
+  
+  let selectedNumPlayers = 1;
+
+  // FUNÇÃO NOVA: Fecha o modal de regras e mostra a configuração inicial
+  function closeRulesAndShowConfig() {
+      document.getElementById("rules-modal").style.display = "none";
+      document.querySelector(".config").style.display = "block"; 
+  }
+
+  function updateTitle() {
+    selectedNumPlayers = parseInt(document.getElementById("numPlayers").value);
+    const gameTitle = document.getElementById("game-title");
+    if (selectedNumPlayers === 1) {
+      gameTitle.textContent = "Quiz de Encaixe - Modo Single Player";
+    } else {
+      gameTitle.textContent = "Quiz de Encaixe - Modo Multiplayer";
+    }
+  }
+
+  function startGame() {
+    selectedNumPlayers = parseInt(document.getElementById("numPlayers").value);
+    
+    // Esconde o painel de configuração para iniciar o jogo ou o modal de nomes
+    document.querySelector(".config").style.display = "none";
+
+    if (selectedNumPlayers === 1) {
+        players = ["Jogador"];
+        scores = [0];
+        times = [totalTime];
+        document.getElementById("game-area").style.display = "block";
+        iniciarRodada();
+    } else {
+        showNameModal(selectedNumPlayers);
+    }
+  }
+
+  function showNameModal(num) {
+      const namesForm = document.getElementById("names-form");
+      namesForm.innerHTML = "";
+      
+      for (let i = 1; i <= num; i++) {
+          const group = document.createElement('div');
+          group.className = 'player-input-group';
+          
+          const label = document.createElement('label');
+          label.textContent = `Nome do Jogador ${i}:`;
+          label.htmlFor = `player${i}`;
+
+          const input = document.createElement('input');
+          input.type = 'text';
+          input.id = `player${i}`;
+          input.placeholder = `Nome do Jogador ${i}`;
+          
+          group.appendChild(label);
+          group.appendChild(input);
+          namesForm.appendChild(group);
+      }
+
+      document.getElementById("player-name-modal").style.display = "flex";
+  }
+
+  function submitNames() {
+      players = [];
+      for (let i = 1; i <= selectedNumPlayers; i++) {
+          const inputElement = document.getElementById(`player${i}`);
+          let name = inputElement.value.trim();
+
+          if (name === "") {
+              name = `Jogador ${i}`;
+          }
+          players.push(name);
+      }
+
+      scores = new Array(selectedNumPlayers).fill(0);
+      times = new Array(selectedNumPlayers).fill(0); 
+      
+      document.getElementById("player-name-modal").style.display = "none";
+      document.getElementById("game-area").style.display = "block";
+      iniciarRodada();
+  }
+  
+  function iniciarRodada() {
+    document.getElementById("result").textContent = "";
+    const currentPlayer = players[currentPlayerIndex];
+    document.getElementById("currentPlayer").textContent = `Vez de: ${currentPlayer}`;
+    gerarPerguntas();
+    resetTimer();
+  }
+
+  function gerarPerguntas() {
+    const shadowBoard = document.getElementById("shadow-board");
+    const pieces = document.getElementById("pieces");
+    shadowBoard.innerHTML = "";
+    pieces.innerHTML = "";
+
+    perguntas.forEach((p, i) => {
+      const slot = document.createElement("div");
+      slot.className = "shadow-slot";
+      slot.dataset.resposta = p.resposta;
+      slot.textContent = p.pergunta; 
+
+      slot.dataset.pergunta = p.pergunta; 
+
+      slot.addEventListener("dragover", e => e.preventDefault());
+      slot.addEventListener("drop", soltar);
+      
+      shadowBoard.appendChild(slot);
+    });
+
+    const respostasEmbaralhadas = [...perguntas]
+      .sort(() => Math.random() - 0.5)
+      .map(p => p.resposta);
+
+    respostasEmbaralhadas.forEach(resp => {
+      const piece = document.createElement("div");
+      piece.className = "piece";
+      piece.textContent = resp;
+      piece.draggable = true;
+      piece.addEventListener("dragstart", e => {
+        e.dataTransfer.setData("text", resp);
+      });
+      pieces.appendChild(piece);
+    });
+  }
+
+  function soltar(e) {
+    e.preventDefault(); 
+    const resposta = e.dataTransfer.getData("text");
+    
+    const slot = e.target.closest('.shadow-slot'); 
+    
+    const piece = [...document.querySelectorAll(".piece")].find(p => p.textContent === resposta);
+
+    if (slot && !slot.dataset.userAnswer) {
+      const questionText = document.createElement('span');
+      questionText.textContent = slot.dataset.pergunta;
+      questionText.classList.add('question-text'); 
+
+      const answerText = document.createElement('span');
+      answerText.textContent = ` → ${resposta}`;
+      answerText.classList.add('answer-text'); 
+
+      const removeIcon = document.createElement('span');
+      removeIcon.textContent = 'X';
+      removeIcon.classList.add('remove-icon');
+      
+      removeIcon.addEventListener('click', (event) => {
+        event.stopPropagation(); 
+        removerResposta(slot);
+      });
+
+      slot.innerHTML = ''; 
+      slot.appendChild(questionText);
+      slot.appendChild(answerText);
+      slot.appendChild(removeIcon);
+      
+      slot.dataset.userAnswer = resposta;
+      piece.classList.add("used");
+      piece.draggable = false;
+    }
+  }
+
+  function removerResposta(slot) {
+    const respostaAntiga = slot.dataset.userAnswer;
+    
+    if (!respostaAntiga) {
+      return; 
+    }
+
+    const piece = [...document.querySelectorAll(".piece")].find(p => p.textContent === respostaAntiga);
+
+    if (piece) {
+      piece.classList.remove("used");
+      piece.draggable = true;
+    }
+
+    slot.innerHTML = ''; 
+    slot.textContent = slot.dataset.pergunta;
+
+    delete slot.dataset.userAnswer;
+    slot.classList.remove("correct", "wrong");
+  }
+
+
+  function verificar() {
+    let acertos = 0;
+    document.querySelectorAll(".shadow-slot").forEach(slot => {
+      const correta = slot.dataset.resposta;
+      const resposta = slot.dataset.userAnswer;
+      slot.classList.remove("correct", "wrong");
+      if (resposta) {
+        if (resposta === correta) {
+          acertos++;
+          slot.classList.add("correct");
+        } else {
+          slot.classList.add("wrong");
+        }
+      }
+    });
+
+    // Armazena o score e o tempo gasto
+    scores[currentPlayerIndex] = acertos;
+    times[currentPlayerIndex] = totalTime - timeLeft; 
+    
+    // Verifica singular/plural
+    const palavraPontuacao = acertos === 1 ? 'ponto' : 'pontos';
+    
+    document.getElementById("result").textContent = `Você acertou ${acertos} de ${perguntas.length}!`;
+    document.getElementById("result").textContent += ` Pontuação: ${acertos} ${palavraPontuacao}.`;
+
+    clearInterval(timerInterval);
+    setTimeout(proximaRodada, 4000);
+  }
+
+  function resetTimer() {
+    clearInterval(timerInterval);
+    timeLeft = totalTime; 
+    updateTimer();
+    timerInterval = setInterval(() => {
+      timeLeft--;
+      updateTimer();
+      if (timeLeft <= 0) {
+        clearInterval(timerInterval);
+        verificar();
+      }
+    }, 1000);
+  }
+
+  function updateTimer() {
+    const min = Math.floor(timeLeft / 60);
+    const sec = String(timeLeft % 60).padStart(2, "0");
+    document.getElementById("timer").textContent = `Tempo: ${min}:${sec}`;
+  }
+
+  function proximaRodada() {
+    currentPlayerIndex++;
+    if (currentPlayerIndex < players.length) {
+      iniciarRodada();
+    } else {
+      mostrarRanking();
+    }
+  }
+
+  function mostrarRanking() {
+    const rankingDiv = document.getElementById("ranking");
+    rankingDiv.style.display = "block";
+    rankingDiv.innerHTML = "<h2>🏆 Ranking Final</h2>";
+
+    const ranking = players.map((p, i) => ({ 
+        nome: p, 
+        pontos: scores[i], 
+        tempo: times[i] // Tempo gasto
+    }))
+    // Lógica de Ordenação: 1º Pontos (desc), 2º Tempo Gasto (asc)
+    .sort((a, b) => {
+        if (b.pontos !== a.pontos) {
+            return b.pontos - a.pontos; // Maior pontuação primeiro
+        }
+        return a.tempo - b.tempo; // Menor tempo gasto primeiro em caso de empate
+    });
+
+    ranking.forEach((r, i) => {
+      const tempoStr = r.tempo > 0 ? `(${r.tempo}s)` : '(Tempo máximo)';
+      
+      // Verifica singular/plural para o Ranking
+      const palavraPontuacao = r.pontos === 1 ? 'ponto' : 'pontos';
+      
+      // ⭐️ CORREÇÃO APLICADA AQUI: Usando <span> com a classe 'rank-highlight'
+      rankingDiv.innerHTML += `<p>${i + 1}º - ${r.nome}: <span class="rank-highlight">${r.pontos} ${palavraPontuacao}</span> ${tempoStr}</p>`;
+    });
+
+    document.getElementById("game-area").style.display = "none";
+  }
+</script>
+
+</body>
+</html>

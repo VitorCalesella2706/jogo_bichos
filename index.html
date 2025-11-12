@@ -116,9 +116,9 @@
     display: none;
   }
   
-  /* ⭐️ NOVO: Classe para forçar o negrito no ranking */
+  /* ⭐️ CORREÇÃO APLICADA AQUI: Usando !important para forçar o negrito */
   .rank-highlight {
-    font-weight: bold;
+    font-weight: bold !important;
   }
 
   .back-button {
@@ -280,22 +280,21 @@
   </div>
 </div>
 <script>
+  // ⭐️ CORREÇÃO APLICADA AQUI: Nova lista de perguntas e respostas fornecida pelo usuário
   const perguntas = [
-    { pergunta: "Peça mergulhada em metal fundido para evitar corrosão.", resposta: "Imersão a quente" },
-    { pergunta: "Corrente elétrica deposita camada metálica sobre a superfície.", resposta: "Eletrodeposição" },
-    { pergunta: "Revestimento físico, sem reação química.", resposta: "PVD (Deposição Física no Vapor)" },
-    { pergunta: "Revestimento obtido por reação química em fase gasosa.", resposta: "CVD (Deposição Química no Vapor)" },
-    { pergunta: "Material fundido é pulverizado sobre a peça.", resposta: "Aspersão térmica" },
-    { pergunta: "União de metal nobre sobre outro para proteger.", resposta: "Cladeamento (Cladding)" },
-    { pergunta: "Íons são inseridos na superfície para aumentar dureza.", resposta: "Implantação iônica" },
-    { pergunta: "Endurece e melhora a superfície sem alterar o interior.", resposta: "Tratamento a laser" },
-    { pergunta: "Cria camada protetora e melhora aderência de tintas.", resposta: "Fosfatização" },
-    { pergunta: "Aumenta resistência e permite coloração do alumínio.", resposta: "Anodização" },
-    { pergunta: "Revestimento químico que evita corrosão.", resposta: "Cromatização" },
-    { pergunta: "Revestimento de zinco para proteger o aço contra ferrugem.", resposta: "Galvanização" },
-    { pergunta: "Suaviza a superfície por ação elétrica e química.", resposta: "Polimento eletrolítico" },
-    { pergunta: "Introduz nitrogênio na superfície para endurecer o aço.", resposta: "Nitretação" },
-    { pergunta: "Forma óxidos protetores na superfície metálica.", resposta: "Oxidação térmica" }
+    { pergunta: "Quem já comeu cocrete da Topré?", resposta: "Bóris" },
+    { pergunta: "Quem é uma quenguinha disfarçada?", resposta: "Zoe" },
+    { pergunta: "Quem é o barril dos chalés?", resposta: "Vicky" },
+    { pergunta: "Quem saiu de revirar o lixo e virou um cilindro?", resposta: "Alfredo" },
+    { pergunta: "Quem é o mais ranzinza?", resposta: "Pipoca" },
+    { pergunta: "Quem fica observando a mãe dormir a noite toda?", resposta: "Tropé" },
+    { pergunta: "Quem adora ficar na sala com seu cantinho?", resposta: "Aurora" },
+    { pergunta: "Quem detesta gatos e é uma injustiçada?", resposta: "Jenny" },
+    { pergunta: "Quem é tão sensível que se tocar quebra como cristal?", resposta: "Cristal" },
+    { pergunta: "Quem tem cara de levado e adora uma zona?", resposta: "Pierry" },
+    { pergunta: "Quem vive deitado e levanta pra pedir comida?", resposta: "Milli" },
+    { pergunta: "Quem tem um olhar sereno e voz de idoso?", resposta: "Nino" },
+    { pergunta: "Quem pede colo e baba no ombro?", resposta: "Filó" }
   ];
 
   let currentPlayerIndex = 0;
@@ -572,7 +571,7 @@
       // Verifica singular/plural para o Ranking
       const palavraPontuacao = r.pontos === 1 ? 'ponto' : 'pontos';
       
-      // ⭐️ CORREÇÃO APLICADA AQUI: Usando <span> com a classe 'rank-highlight'
+      // ⭐️ Linha do Ranking: Usa o span com a classe 'rank-highlight'
       rankingDiv.innerHTML += `<p>${i + 1}º - ${r.nome}: <span class="rank-highlight">${r.pontos} ${palavraPontuacao}</span> ${tempoStr}</p>`;
     });
 
